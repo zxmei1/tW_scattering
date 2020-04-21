@@ -1,0 +1,6 @@
+*.pyc
+*.root
+*.png
+*.pdf
+*_cfg.py
+*.cmd
