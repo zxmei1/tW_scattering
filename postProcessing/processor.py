@@ -6,11 +6,10 @@ Submission tarball is independent of RootTools/Samples
 '''
 
 import os
+import glob
 
-from RootTools.core.standard import *
 from PhysicsTools.NanoAODTools.postprocessing.framework.postprocessor import PostProcessor
-
-from Samples.nanoAOD.Fall17_ucsd import *
+from ObjectSelection import PhysicsObjects
 
 # argparser
 import argparse
@@ -26,45 +25,6 @@ argParser.add_argument('--year',        action='store', default=None, help="Whic
 argParser.add_argument('--era',         action='store', default="v1", help="Which era/subdirectory?")
 options = argParser.parse_args()
 
-# Logger
-import tW_scattering.Tools.logger as logger
-import RootTools.core.logger as logger_rt
-logger    = logger.get_logger(   options.logLevel, logFile = None)
-logger_rt = logger_rt.get_logger(options.logLevel, logFile = None)
-
-logger.info("Searching for sample %s"%options.samples[0])
-
-samples = []
-for selectedSample in options.samples:
-    for sample in allSamples:
-        if selectedSample == sample.name:
-            samples.append(sample)
-            logger.info("Adding sample %s", sample.name)
-            logger.info("Sample has normalization %s", sample.normalization)
-            sample.normalization = float(sample.normalization)
-
-
-if len(samples)==0:
-    logger.info( "No samples found. Was looking for %s. Exiting" % options.samples )
-    sys.exit(-1)
-
-sample_name = samples[0].name
-
-if len(samples)>1:
-    sample_name =  samples[0].name+"_comb"
-    logger.info( "Combining samples %s to %s.", ",".join(s.name for s in samples), sample_name )
-    sample = Sample.combine(sample_name, samples, maxN = None)
-    # Clean up
-    for s in samples:
-        sample.clear()
-    logger.info("Final normalization is %s", sample.normalization)
-elif len(samples)==1:
-    sample = samples[0]
-else:
-    raise ValueError( "Need at least one sample. Got %r",samples )
-
-logger.info("Sample contains %s files", len(sample.files))
-sample.files = sorted(sample.files) # in order to avoid some random ordered file list, different in each job
 
 
 outDir = '/home/users/dspitzba/ttw_samples/'
@@ -75,17 +35,24 @@ nbSkim = 'nJet>0&&(nElectron+nMuon)>0'
 from LumiWeight import LumiWeight
 
 modules = [
-    LumiWeight( 1000., float(sample.normalization) ),
-#    ObjectSelection( year=2017 )
+#    LumiWeight( 1000., float(sample.normalization) ),
+    PhysicsObjects( year=2018 )
     ]
 
-len_orig = len(sample.files)
-## sort the list of files?
-sample = sample.split( n=options.nJobs, nSub=options.job)
-logger.info( "fileBasedSplitting: Run over %i/%i files for job %i/%i."%(len(sample.files), len_orig, options.job, options.nJobs))
-logger.debug( "fileBasedSplitting: Files to be run over:\n%s", "\n".join(sample.files) )
+# signal
+files = glob.glob('/hadoop/cms/store/user/dspitzba/tW_scattering/tW_scattering/nanoAOD/*.root')
+sample_name = 'tW_scattering_private_Autumn18'
 
-p = PostProcessor(os.path.join(outDir, sample_name), sample.files, modules=modules, outputbranchsel='keep_and_drop.txt', branchsel='keep_and_drop.txt', cut=nbSkim, haddFileName=os.path.join(outDir, sample_name, sample_name+'_%s_processed.root'%options.job), prefetch=False)
+# central sample
+files = glob.glob('/hadoop/cms/store/user/dspitzba/nanoAOD/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20_ext1-v1/*.root')
+sample_name = 'TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20_ext1-v1'
+files = files[:1]
 
-p.run()
+skimmer = PostProcessor(os.path.join(outDir, sample_name), files, modules=modules, outputbranchsel='keep_and_drop.txt', branchsel='keep_and_drop.txt', cut=nbSkim, haddFileName=os.path.join(outDir, sample_name, sample_name+'_processed.root'), prefetch=False)
+
+merger = PostProcessor(os.path.join(outDir, sample_name), glob.glob( os.path.join(outDir, sample_name) + '*Skim.root' ), haddFileName=os.path.join(outDir, sample_name, 'merged', sample_name+'_merged.root') )
+
+skimmer.run()
+
+merger.run()
 

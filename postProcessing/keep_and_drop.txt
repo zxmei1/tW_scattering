@@ -5,8 +5,8 @@ keep FatJet*
 keep Electron*
 keep Muon*
 keep MET*
+keep Lepton*
 keep event
 keep run
 keep luminosityBlock
-keep weight
 keep genWeight

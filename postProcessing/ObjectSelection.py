@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import math
+import glob
 import itertools
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 
@@ -45,13 +46,13 @@ class PhysicsObjects(Module):
         #self.out.branch("GoodJet_btag", "F", lenVar="nGoodJet")
 
         ##
-        self.out.branch("Muon_isVeto",      "F", "nMuon")
-        self.out.branch("Muon_isGood",      "F", "nMuon")
-        self.out.branch("Electron_isVeto",  "F", "nElectron")
-        self.out.branch("Electron_isGood",  "F", "nElectron")
-        self.out.branch("Jet_isGoodJet",    "F", "nJet")
-        self.out.branch("Jet_isGoodBJet",   "F", "nJet")
-        self.out.branch("Jet_crossClean",   "F", "nJet")
+        self.out.branch("Muon_isVeto",      "F", lenVar="nMuon")
+        self.out.branch("Muon_isTight",     "F", lenVar="nMuon")
+        self.out.branch("Electron_isVeto",  "F", lenVar="nElectron")
+        self.out.branch("Electron_isTight", "F", lenVar="nElectron")
+        self.out.branch("Jet_isGoodJet",    "F", lenVar="nJet")
+        self.out.branch("Jet_isGoodBJet",   "F", lenVar="nJet")
+        self.out.branch("Jet_crossClean",   "F", lenVar="nJet")
 
 
         # Counter for good b-tags
@@ -113,7 +114,7 @@ class PhysicsObjects(Module):
             isTightMuon.append(mu.isTight)
             isVetoMuon.append(mu.isVeto)
             if self.isTightMuon(mu):
-                lepton.append({'pt':mu.pt, 'eta':mu.eta, 'phi':mu.phi, 'pdgId':mu.pdgId, 'miniIso':mu.miniPFRelIso_all, 'muIndex':i, 'elIndex':-1})
+                leptons.append({'pt':mu.pt, 'eta':mu.eta, 'phi':mu.phi, 'pdgId':mu.pdgId, 'miniIso':mu.miniPFRelIso_all, 'muIndex':i, 'elIndex':-1})
 
 
         isTightElectron = []
@@ -124,7 +125,7 @@ class PhysicsObjects(Module):
             isTightElectron.append(el.isTight)
             isVetoElectron.append(el.isVeto)
             if self.isTightElectron(el):
-                lepton.append({'pt':el.pt, 'eta':el.eta, 'phi':el.phi, 'pdgId':el.pdgId, 'miniIso':el.miniPFRelIso_all, 'muIndex':-1, 'elIndex':i})
+                leptons.append({'pt':el.pt, 'eta':el.eta, 'phi':el.phi, 'pdgId':el.pdgId, 'miniIso':el.miniPFRelIso_all, 'muIndex':-1, 'elIndex':i})
 
         
 
@@ -142,13 +143,13 @@ class PhysicsObjects(Module):
                             j.cleanMask = 0
 
             isGoodJet.append(1 if (self.isGoodJet(j) and j.cleanMask) else 0)
-            isGoodBJet.append(1 if self.isGoodBJet(j) and j.cleanMask) else 0)
+            isGoodBJet.append(1 if (self.isGoodBJet(j) and j.cleanMask) else 0)
             
-            cleanMaskV.append(cleanMask)
+            cleanMaskV.append(j.cleanMask)
 
-        self.out.fillBranch("Muon_isGood",      isGoodMuon)
+        self.out.fillBranch("Muon_isTight",      isTightMuon)
         self.out.fillBranch("Muon_isVeto",      isVetoMuon)
-        self.out.fillBranch("Electron_isGood",  isGoodElectron)
+        self.out.fillBranch("Electron_isTight",  isTightElectron)
         self.out.fillBranch("Electron_isVeto",  isVetoElectron)
         self.out.fillBranch("Jet_crossClean",   cleanMaskV)
         self.out.fillBranch("Jet_isGoodJet",    isGoodJet)
@@ -158,16 +159,17 @@ class PhysicsObjects(Module):
         leptons_pd = pd.DataFrame(leptons)
 
         self.out.fillBranch("nLepton",          len(leptons_pd) )
-        self.out.fillBranch("Lepton_pt",        leptons_pd.sort_values(by='pt', ascending=False)['pt'].tolist() )
-        self.out.fillBranch("Lepton_eta",       leptons_pd.sort_values(by='pt', ascending=False)['eta'].tolist() )
-        self.out.fillBranch("Lepton_phi",       leptons_pd.sort_values(by='pt', ascending=False)['phi'].tolist() )
-        self.out.fillBranch("Lepton_pdgId",     leptons_pd.sort_values(by='pt', ascending=False)['pdgId'].tolist() )
-        self.out.fillBranch("Lepton_miniIso",   leptons_pd.sort_values(by='pt', ascending=False)['miniIso'].tolist() )
-        self.out.fillBranch("Lepton_muIndex",   leptons_pd.sort_values(by='pt', ascending=False)['muIndex'].tolist() )
-        self.out.fillBranch("Lepton_elIndex",   leptons_pd.sort_values(by='pt', ascending=False)['elIndex'].tolist() )
+        if len(leptons_pd)>0:
+            self.out.fillBranch("Lepton_pt",        leptons_pd.sort_values(by='pt', ascending=False)['pt'].tolist() )
+            self.out.fillBranch("Lepton_eta",       leptons_pd.sort_values(by='pt', ascending=False)['eta'].tolist() )
+            self.out.fillBranch("Lepton_phi",       leptons_pd.sort_values(by='pt', ascending=False)['phi'].tolist() )
+            self.out.fillBranch("Lepton_pdgId",     leptons_pd.sort_values(by='pt', ascending=False)['pdgId'].tolist() )
+            self.out.fillBranch("Lepton_miniIso",   leptons_pd.sort_values(by='pt', ascending=False)['miniIso'].tolist() )
+            self.out.fillBranch("Lepton_muIndex",   leptons_pd.sort_values(by='pt', ascending=False)['muIndex'].tolist() )
+            self.out.fillBranch("Lepton_elIndex",   leptons_pd.sort_values(by='pt', ascending=False)['elIndex'].tolist() )
 
         return True
 
 # define modules using the syntax 'name = lambda : constructor' to avoid having them loaded when not needed
 
-tools = lambda : WHObjects( )
+selector2018 = lambda : PhysicsObjects( year=2018 )

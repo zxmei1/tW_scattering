@@ -4,6 +4,8 @@ Currently lives within CMSSW_10_2_9. Recipe as follow:
 ```
 
 
+git clone --recursive https://github.com/danbarto/tW_scattering.git
+
 
 ```
 
