@@ -131,24 +131,25 @@ class exampleProcessor(processor.ProcessorABC):
         output['N_b'].fill(dataset=dataset, multiplicity=df["nGoodBTag"][selection], weight=df['weight'][selection]*cfg['lumi'] )
         output['N_jet'].fill(dataset=dataset, multiplicity=df["nGoodJet"][selection], weight=df['weight'][selection]*cfg['lumi'] )
         
-        st = Jet[Jet['goodjet']==1].pt.sum() + Jepton.pt.sum() + df['MET_pt']
-        output['ST'].fill(dataset=dataset, pt=st[b_nonb_selection].flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
-        output['HT'].fill(dataset=dataset, pt=df['Jet_pt'][b_nonb_selection].sum().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        st = jet[jet['goodjet']==1].pt.sum() + lepton.pt.sum() + df['MET_pt']
+        output['ST'].fill(dataset=dataset, ht=st[b_nonb_selection].flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['HT'].fill(dataset=dataset, ht=df['Jet_pt'][b_nonb_selection].sum().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
         
         #mbj_max, mjj_max, mlb_max, mlb_min, mlj_max, mlj_min
         b_nonb_pair = btag.cross(light)
         jet_pair = light.choose(2)
         output['mbj_max'].fill(dataset=dataset, mass=b_nonb_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
         output['mjj_max'].fill(dataset=dataset, mass=jet_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
-        lepton_bjet_pair = Lepton.cross(b)
+        lepton_bjet_pair = lepton.cross(btag)
         output['mlb_max'].fill(dataset=dataset, mass=lepton_bjet_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
         output['mlb_min'].fill(dataset=dataset, mass=lepton_bjet_pair[b_nonb_selection].mass.min().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
-        lepton_jet_pair = Lepton.cross(goodjets)
+        lepton_jet_pair = lepton.cross(jet)
         output['mlj_max'].fill(dataset=dataset, mass=lepton_jet_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
         output['mlj_min'].fill(dataset=dataset, mass=lepton_jet_pair[b_nonb_selection].mass.min().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
 
 
         # spec
+        spectator = jet[(abs(jet.eta)>2.0) & (abs(jet.eta)<4.7) & (jet.pt>25) & (jet['puId']>=7) & (jet['jetId']>=6)] # 40 GeV seemed good. let's try going lower
         output['N_spec'].fill(dataset=dataset, multiplicity=spectator[b_nonb_selection].counts, weight=df['weight'][b_nonb_selection]*cfg['lumi'])
         output['pt_spec_max'].fill(dataset=dataset, pt=spectator[b_nonb_selection & (spectator.counts>0)].pt.max().flatten(), weight=df['weight'][b_nonb_selection & (spectator.counts>0)]*cfg['lumi'])
         

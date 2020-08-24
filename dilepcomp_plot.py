@@ -155,15 +155,15 @@ for name in histograms:
         axis = 'multiplicity'
         new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
         histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif namge == 'N_b':
+    elif name == 'N_b':
         axis = 'multiplicity'
         new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
         histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif namge == 'N_jet':
+    elif name == 'N_jet':
         axis = 'multiplicity'
         new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
         histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif namge == 'N_spec':
+    elif name == 'N_spec':
         axis = 'multiplicity'
         new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
         histogram = histogram.rebin('multiplicity', new_n_bins)
