@@ -44,17 +44,27 @@ def finalizePlotDir( path ):
         os.makedirs(path)
     shutil.copy( os.path.expandvars( '$TWHOME/Tools/php/index.php' ), path )
     
-def addRowToCutFlow( output, df, cfg, name, selection, processes=['TTW', 'TTX', 'diboson', 'ttbar', 'tW_scattering'] ):
+def addRowToCutFlow( output, df, cfg, name, selection, processes=['TTW', 'TTX', 'diboson', 'ttbar', 'tW_scattering', 'DY'] ):
     '''
     add one row with name and selection for each process to the cutflow accumulator
     '''
+
     for process in processes:
         if selection is not None:
             output[process][name] += ( sum(df['weight'][ (df['dataset']==process) & selection ].flatten() )*cfg['lumi'] )
+            #thisnum = sum(df['weight'][ (df['dataset']==process) & selection ].flatten() )*cfg['lumi']
+            #percentage = thisnum/lastnum
+
         else:
             output[process][name] += ( sum(df['weight'][ (df['dataset']==process) ].flatten() )*cfg['lumi'] )
+            #thisnum = sum(df['weight'][ (df['dataset']==process) ].flatten() )*cfg['lumi']
+            #percentage = 1
+        
+        #output[process][name] += ( percentage*100)
+    
+    return 1
             
-def getCutFlowTable(output, processes=['tW_scattering', 'TTW', 'ttbar'], lines=['skim', 'twoJet', 'oneBTag']):
+def getCutFlowTable(output, processes=['tW_scattering', 'TTW', 'ttbar', 'diboson', 'TTX', 'DY'], lines=['skim', 'twoJet', 'oneBTag']):
     '''
     Takes a cache and returns a formated cut-flow table of processes.
     Lines and processes have to follow the naming of the coffea processor output.
@@ -126,7 +136,6 @@ def sphericity(obj):
     S=0: linear event (l2=l3=0)
     S is not infrared safe. There's a linearized version, too.
     Circularity is C = 2*l2/(l1+l2)
-
     Numpy lesson:
     This is how you would easily get a 3x3 matrix from two vectors.
     row = np.array([[1, 3, 2]])
@@ -171,5 +180,3 @@ def mt(pt1, phi1, pt2, phi2):
     Calculate MT
     '''
     return np.sqrt( 2*pt1*pt2 * (1 - np.cos(phi1-phi2)) )
-
-

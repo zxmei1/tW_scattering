@@ -282,4 +282,4 @@ for name in histograms:
         fig.clear()
         ax.clear()
 
-df = getCutFlowTable(output, processes=['tW_scattering', 'ttbar', 'diboson', 'TTW', 'TTX', 'DY'], lines=['skim','skim','dilep','fourJet','twoBTag','met35','dimuon','ss','Zveto_mu','Zveto',])
+df = getCutFlowTable(output, processes=['tW_scattering', 'ttbar', 'diboson', 'TTW', 'TTX', 'DY'], lines=['skim','dilep','fourJet','twoBTag', 'ss', 'met35'])

@@ -189,18 +189,17 @@ class exampleProcessor(processor.ProcessorABC):
         ## work on the cutflow
         output['totalEvents']['all'] += len(df['weight'])
 
-        addRowToCutFlow( output, df, cfg, 'skim',        None ) # entry point
-        addRowToCutFlow( output, df, cfg, 'dilep',      dilep )
-        addRowToCutFlow( output, df, cfg, 'fourJet',      dilep & fourJet )
-        addRowToCutFlow( output, df, cfg, 'twoBTag',     dilep & fourJet & twoBTag )
-        addRowToCutFlow( output, df, cfg, 'ss',          dilep & fourJet & twoBTag & ss )
-        addRowToCutFlow( output, df, cfg, 'met35',       dilep & fourJet & twoBTag & met )
-        addRowToCutFlow( output, df, cfg, 'dimuon',      dilep & fourJet & twoBTag & met & twoMuon )
-        addRowToCutFlow( output, df, cfg, 'Zveto_mu',    dilep & fourJet & twoBTag & met & Zveto_mu )
-        addRowToCutFlow( output, df, cfg, 'Zveto',       dilep & fourJet & twoBTag & met & Zveto_mu & Zveto_ele )
+        addRowToCutFlow( output, df, cfg, 'skim', None ) # entry point
+        addRowToCutFlow( output, df, cfg, 'dilep',   dilep )
+        addRowToCutFlow( output, df, cfg, 'fourJet',  dilep & fourJet )
+        addRowToCutFlow( output, df, cfg, 'twoBTag',   dilep & fourJet & twoBTag )
+        addRowToCutFlow( output, df, cfg, 'ss',   dilep & fourJet & twoBTag & ss )
+        addRowToCutFlow( output, df, cfg, 'met35',  dilep & fourJet & twoBTag & ss & met )
+
+
 
         # preselection of events
-        event_selection = dilep & fourJet & twoBTag & met
+        event_selection = dilep & fourJet & twoBTag & met & ss
         
         ## And fill the histograms
         # just the number of electrons and muons
@@ -242,11 +241,11 @@ def main():
 
     else:
         # Run the processor
-        output = processor.run_uproot_job(fileset,
+        output = processor.run_uproot_job(fileset_2l,
                                       treename='Events',
                                       processor_instance=exampleProcessor(),
                                       executor=processor.futures_executor,
-                                      executor_args={'workers': 16, 'function_args': {'flatten': False}},
+                                      executor_args={'workers': 18, 'function_args': {'flatten': False}},
                                       chunksize=100000,
                                      )
         cache['fileset']        = fileset_2l
@@ -264,3 +263,19 @@ def main():
 
 if __name__ == "__main__":
     output = main()
+
+df = getCutFlowTable(output, processes=['tW_scattering', 'ttbar', 'diboson', 'TTW', 'TTX', 'DY'], lines=['skim','dilep','fourJet','twoBTag', 'ss', 'met35'])
+
+#print percentage table
+percentoutput = {}
+for process in ['tW_scattering', 'ttbar', 'diboson', 'TTW', 'TTX', 'DY']:
+    percentoutput[process] = {'skim':0,'dilep':0,'fourJet':0,'twoBTag':0, 'ss':0, 'met35':0}
+    lastnum = output[process]['skim']
+    for select in ['skim','dilep','fourJet','twoBTag', 'ss', 'met35']:
+        thisnum = output[process][select]
+        percent = thisnum/lastnum
+        percentoutput[process][select] = percent
+        lastnum = thisnum
+df_p = pd.DataFrame(data=percentoutput)
+df_p = df_p.reindex(['skim','dilep','fourJet','twoBTag', 'ss', 'met35'])
+print(df_p)
