@@ -1,7 +1,7 @@
 
 import time
 
-from metis.Sample import DirectorySample
+from metis.Sample import DirectorySample, DBSSample
 from metis.CondorTask import CondorTask
 from metis.StatsParser import StatsParser
 from metis.Utils import do_cmd
@@ -14,32 +14,6 @@ from yaml import Loader, Dumper
 
 import os
 
-def getMeta(file):
-    import ROOT
-    c = ROOT.TChain("Runs")
-    c.Add(file)
-    c.GetEntry(0)
-    res = c.genEventCount_, c.genEventSumw_, c.genEventSumw2_
-    del c
-    return res
-
-def dasWrapper(DASname, query='file'):
-    sampleName = DASname.rstrip('/')
-
-    dbs='dasgoclient -query="%s dataset=%s"'%(query, sampleName)
-    dbsOut = os.popen(dbs).readlines()
-    dbsOut = [ l.replace('\n','') for l in dbsOut ]
-    return dbsOut
-
-def getSampleNorm(name):
-    files = [ 'root://cmsxrootd.fnal.gov/'+f for f in dasWrapper(name) ]
-    nEvents, sumw, sumw2 = 0,0,0
-    for f in files:
-        res = getMeta(f)
-        nEvents += res[0]
-        sumw += res[1]
-        sumw2 += res[2]
-    return nEvents, sumw, sumw2
 
 data_path = os.path.expandvars('$TWHOME/data/')
 with open(data_path+'samples.yaml') as f:
@@ -102,7 +76,10 @@ merge_tasks = []
 
 #if True:
 for s in samples.keys():
-    sample = DirectorySample(dataset = samples[s]['name'], location = samples[s]['path'])
+    if samples[s]['path'] is not None:
+        sample = DirectorySample(dataset = samples[s]['name'], location = samples[s]['path'])
+    else:
+        sample = DBSSample(dataset = s) # should we make use of the files??
 
     lumiWeightString = 1000*samples[s]['xsec']/samples[s]['sumWeight']
 
@@ -115,9 +92,9 @@ for s in samples.keys():
         executable = "executable.sh",
         arguments = "%s %s"%(tag, lumiWeightString),
         #tarfile = "merge_scripts.tar.gz",
-        files_per_output = 1,
-        output_dir = os.path.join(outDir, sample.get_datasetname()),
-        output_name = sample.get_datasetname() + ".root",
+        files_per_output = 3,
+        output_dir = os.path.join(outDir, samples[s]['name']),
+        output_name = "nanoSkim.root",
         output_is_tree = True,
         # check_expectedevents = True,
         tag = tag,
@@ -133,54 +110,54 @@ for s in samples.keys():
 
 
 
-#if False:
-    merge_task = CondorTask(
-        sample = DirectorySample(
-            dataset="merge_"+sample.get_datasetname(),
-            location=maker_task.get_outputdir(),
-        ),
-        # open_dataset = True, flush = True,
-        executable = "merge_executable.sh",
-        arguments = "%s %s"%(tag, lumiWeightString),
-        #tarfile = "merge_scripts.tar.gz",
-        files_per_output = 10,
-        output_dir = maker_task.get_outputdir() + "/merged",
-        output_name = sample.get_datasetname() + ".root",
-        output_is_tree = True,
-        # check_expectedevents = True,
-        tag = tag,
-        # condor_submit_params = {"sites":"T2_US_UCSD"},
-        # cmssw_version = "CMSSW_9_2_8",
-        # scram_arch = "slc6_amd64_gcc530",
-        condor_submit_params = {"sites":"T2_US_UCSD,UAF"},
-        cmssw_version = "CMSSW_10_2_9",
-        scram_arch = "slc6_amd64_gcc700",
-        # recopy_inputs = True,
-        # no_load_from_backup = True,
-        min_completion_fraction = 0.99,
-    )
-
-    merge_tasks.append(merge_task)
+##if False:
+#    merge_task = CondorTask(
+#        sample = DirectorySample(
+#            dataset="merge_"+samples[s]['name'],
+#            location=maker_task.get_outputdir(),
+#        ),
+#        # open_dataset = True, flush = True,
+#        executable = "merge_executable.sh",
+#        arguments = "%s %s"%(tag, lumiWeightString),
+#        #tarfile = "merge_scripts.tar.gz",
+#        files_per_output = 10,
+#        output_dir = maker_task.get_outputdir() + "/merged",
+#        output_name = "nanoSkim.root",
+#        output_is_tree = True,
+#        # check_expectedevents = True,
+#        tag = tag,
+#        # condor_submit_params = {"sites":"T2_US_UCSD"},
+#        # cmssw_version = "CMSSW_9_2_8",
+#        # scram_arch = "slc6_amd64_gcc530",
+#        condor_submit_params = {"sites":"T2_US_UCSD,UAF"},
+#        cmssw_version = "CMSSW_10_2_9",
+#        scram_arch = "slc6_amd64_gcc700",
+#        # recopy_inputs = True,
+#        # no_load_from_backup = True,
+#        min_completion_fraction = 0.99,
+#    )
+#
+#    merge_tasks.append(merge_task)
 
 if not args.dryRun:
     for i in range(100):
         total_summary = {}
     
-        for maker_task, merge_task in zip(maker_tasks,merge_tasks):
-        #for maker_task in maker_tasks:
+        #for maker_task, merge_task in zip(maker_tasks,merge_tasks):
+        for maker_task in maker_tasks:
             maker_task.process()
     
             frac = maker_task.complete(return_fraction=True)
-            if frac >= maker_task.min_completion_fraction:
-            # if maker_task.complete():
-                do_cmd("mkdir -p {}/merged".format(maker_task.get_outputdir()))
-                do_cmd("mkdir -p {}/skimmed".format(maker_task.get_outputdir()))
-                merge_task.reset_io_mapping()
-                merge_task.update_mapping()
-                merge_task.process()
+            #if frac >= maker_task.min_completion_fraction:
+            ## if maker_task.complete():
+            #    do_cmd("mkdir -p {}/merged".format(maker_task.get_outputdir()))
+            #    do_cmd("mkdir -p {}/skimmed".format(maker_task.get_outputdir()))
+            #    merge_task.reset_io_mapping()
+            #    merge_task.update_mapping()
+            #    merge_task.process()
     
             total_summary[maker_task.get_sample().get_datasetname()] = maker_task.get_task_summary()
-            total_summary[merge_task.get_sample().get_datasetname()] = merge_task.get_task_summary()
+            #total_summary[merge_task.get_sample().get_datasetname()] = merge_task.get_task_summary()
  
         print (frac)
    
