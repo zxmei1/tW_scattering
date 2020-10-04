@@ -7,16 +7,16 @@ caches:
   singleLep_small: singleLep_small
   triLep: triLep
   triLep_small: triLep_small
-<<<<<<< HEAD
+
 
   diLep: diLep
   diLep_small: diLep_small
 
-=======
+
   diLepOS: diLepOS
   diLepOS_small: diLepOS_small
   example: example
->>>>>>> 8e406378d8b196be9337d247ad9d65ecd484b41f
+
 lumi: 137
 
 meta:
