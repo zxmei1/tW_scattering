@@ -15,9 +15,10 @@ except ImportError:
 
 import os
 import shutil
+import math
+import copy
 
 import glob
-import math
 
 data_path = os.path.expandvars('$TWHOME/data/')
 
@@ -34,9 +35,9 @@ def dumpConfig(cfg):
 def getName( DAS ):
     split = DAS.split('/')
     if split[-1].count('AOD'):
-        return '__'.join(DAS.split('/')[1:3])
+        return '_'.join(DAS.split('/')[1:3])
     else:
-        return '__'.join(DAS.split('/')[-3:-1])
+        return '_'.join(DAS.split('/')[-3:-1])
         #return'dummy'
 
 def finalizePlotDir( path ):
@@ -45,7 +46,7 @@ def finalizePlotDir( path ):
         os.makedirs(path)
     shutil.copy( os.path.expandvars( '$TWHOME/Tools/php/index.php' ), path )
     
-def addRowToCutFlow( output, df, cfg, name, selection, processes=['TTW', 'TTX', 'diboson', 'ttbar', 'tW_scattering','DY'] ):
+def addRowToCutFlow( output, df, cfg, name, selection, processes=['TTW', 'TTX', 'diboson', 'ttbar', 'tW_scattering'] ):
     '''
     add one row with name and selection for each process to the cutflow accumulator
     '''
@@ -57,17 +58,28 @@ def addRowToCutFlow( output, df, cfg, name, selection, processes=['TTW', 'TTX', 
             output[process][name] += ( sum(df['weight'][ (df['dataset']==process) ].flatten() )*cfg['lumi'] )
             output[process][name+'_w2'] += ( sum((df['weight'][ (df['dataset']==process) ]**2).flatten() )*cfg['lumi']**2 )
             
-def getCutFlowTable(output, processes=['tW_scattering', 'TTW', 'ttbar'], lines=['skim', 'twoJet', 'oneBTag'], significantFigures=3):
+def getCutFlowTable(output, processes=['tW_scattering', 'TTW', 'ttbar'], lines=['skim', 'twoJet', 'oneBTag'], significantFigures=3, absolute=True, signal=None):
     '''
-    Takes a cache and returns a formated cut-flow table of processes.
+    Takes the output of a coffea processor (i.e. a python dictionary) and returns a formated cut-flow table of processes.
     Lines and processes have to follow the naming of the coffea processor output.
     '''
     res = {}
+    eff = {}
     for proc in processes:
         res[proc] = {line: "%s +/- %s"%(round(output[proc][line], significantFigures-len(str(int(output[proc][line])))), round(math.sqrt(output[proc][line+'_w2']), significantFigures-len(str(int(output[proc][line]))))) for line in lines}
+        
+        # for efficiencies. doesn't deal with uncertainties yet
+        eff[proc] = {lines[i]: round(output[proc][lines[i]]/output[proc][lines[i-1]], significantFigures) if (i>0 and output[proc][lines[i-1]]>0) else 1. for i,x in enumerate(lines)}
+    
+    # if a signal is specified, calculate S/B
+    if signal is not None:
+        backgrounds = copy.deepcopy(processes)
+        backgrounds.remove(signal)
+        res['S/B'] = {line: round( output[signal][line]/sum([ output[proc][line] for proc in backgrounds ]) if sum([ output[proc][line] for proc in backgrounds ])>0 else 1, significantFigures) for line in lines }
+    if not absolute:
+        res=eff
     df = pd.DataFrame(res)
     df = df.reindex(lines) # restores the proper order
-    print (df[processes])
     return df
 
 ## event shape variables. computing intensive
