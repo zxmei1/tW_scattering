@@ -2,11 +2,9 @@
 small script that reades histograms from an archive and saves figures in a public space
 ToDo:
 [x] Cosmetics (labels etc)
-[x] ratio pad!
-  [x] pseudo data
-    [ ] -> move to processor to avoid drawing toys every time!
-[x] uncertainty band
-[ ] fix shapes
+[ ] ratio pad!
+  [ ] pseudo data
+[ ] uncertainty band
 '''
 
 
@@ -17,7 +15,6 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import numpy as np
 
 from Tools.helpers import *
 from klepto.archives import dir_archive
@@ -94,12 +91,9 @@ my_labels = {
     'DY': 'Drell-Yan'
 }
 
-data_err_opts = {
-    'linestyle': 'none',
-    'marker': '.',
-    'markersize': 10.,
-    'color': 'k',
-    'elinewidth': 1,
+fill_opts = {
+    'edgecolor': (0,0,0,0.3),
+    'alpha': 1.0
 }
 
 error_opts = {
@@ -110,21 +104,16 @@ error_opts = {
     'linewidth': 0
 }
 
-fill_opts = {
-    'edgecolor': (0,0,0,0.3),
-    'alpha': 1.0
-}
-
 # load the configuration
 cfg = loadConfig()
 
 # load the results
-cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['singleLep']), serialized=True)
+cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['simpleProcessor']), serialized=True)
 cache.load()
 
 histograms = cache.get('histograms')
 output = cache.get('simple_output')
-plotDir = os.path.expandvars(cfg['meta']['plots']) + '/dilep_10.8selection_presentation_plot/'
+plotDir = os.path.expandvars(cfg['meta']['plots']) + '/10.17pre_withoutSS/'
 finalizePlotDir(plotDir)
 
 if not histograms:
@@ -137,113 +126,48 @@ for name in histograms:
     print (name)
     skip = False
     histogram = output[name]
-    if name == 'N_ele':
+    if name == 'MET_pt':
         # rebin
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'N_mu':
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'N_diele':
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'N_dimu':
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'N_b':
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'N_jet':
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'N_spec':
-        axis = 'multiplicity'
-        new_n_bins = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
-        histogram = histogram.rebin('multiplicity', new_n_bins)
-    elif name == 'mbj_max':
-        # rebin
-        axis = 'mass'
-        new_mass_bins = hist.Bin('mass', r'$M(b, light) \ (GeV)$', 25, 0, 1500)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'mjj_max':
-        # rebin
-        axis = 'mass'
-        new_mass_bins = hist.Bin('mass', r'$M(jets) \ (GeV)$', 25, 0, 1500)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'mlj_max':
-        # rebin
-        axis = 'mass'
-        new_mass_bins = hist.Bin('mass', r'$M(lepton+jet) \ (GeV)$', 25, 0, 1500)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'mlb_max':
-        # rebin
-        axis = 'mass'
-        new_mass_bins = hist.Bin('mass', r'$M(lepton+bjet) \ (GeV)$', 25, 0, 1500)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'mlj_min':
-        # rebin
-        axis = 'mass'
-        new_mass_bins = hist.Bin('mass', r'$M(lepton+jet) \ (GeV)$', 25, 0, 1500)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'mlb_min':
-        # rebin
-        axis = 'mass'
-        new_mass_bins = hist.Bin('mass', r'$M(lepton+bjet) \ (GeV)$', 25, 0, 1500)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'MET_pt':
-        # rebin
-        axis = 'pt'
         new_met_bins = hist.Bin('pt', r'$E_T^{miss} \ (GeV)$', 20, 0, 200)
         histogram = histogram.rebin('pt', new_met_bins)
     elif name == 'MT':
         # rebin
-        axis = 'pt'
         new_met_bins = hist.Bin('pt', r'$M_T \ (GeV)$', 20, 0, 200)
         histogram = histogram.rebin('pt', new_met_bins)
-    elif name == 'pt_spec_max':
+    elif name == 'N_jet':
         # rebin
-        axis = 'pt'
-        new_met_bins = hist.Bin('pt', r'$M_T \ (GeV)$', 20, 0, 200)
-        histogram = histogram.rebin('pt', new_met_bins)
-    elif name == 'HT':
-        axis = 'ht'
-        new_ht_bins = hist.Bin("ht", r"$H_{T}$ (GeV)", 30, 0, 3000)
-        histogram = histogram.rebin('ht', new_ht_bins)
-    elif name == 'ST':
-        axis = 'ht'
-        new_ht_bins = hist.Bin("ht", r"$S_{T}$ (GeV)", 30, 0, 3000)
-        histogram = histogram.rebin('ht', new_ht_bins)
+        new_n_bins = hist.Bin('multiplicity', r'$N_{jet}$', 15, -0.5, 14.5)
+        histogram = histogram.rebin('multiplicity', new_n_bins)
+    elif name == 'N_b':
+        # rebin
+        new_n_bins = hist.Bin('multiplicity', r'$N_{b-jet}$', 5, -0.5, 4.5)
+        histogram = histogram.rebin('multiplicity', new_n_bins)
+    elif name == 'b_nonb_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r'$M(b, light) \ (GeV)$', 25, 0, 1500)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'b_b_nonb_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r'$M(2b, light) \ (GeV)$', 25, 0, 1500)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'jet_pair_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r'$M(jet pair) \ (GeV)$', 25, 0, 1500)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'lepton_jet_pair_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r'$M(lepton+jet) \ (GeV)$', 25, 0, 1500)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'lepton_bjet_pair_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r'$M(lepton+bjet) \ (GeV)$', 25, 0, 1500)
+        histogram = histogram.rebin('mass', new_mass_bins)
     else:
         skip = True
-
     if not skip:
         y_max = histogram.sum("dataset").values(overflow='over')[()].max()
         y_over = histogram.sum("dataset").values(overflow='over')[()][-1]
 
-        # get pseudo data
-        bin_values = histogram.axis(axis).centers(overflow='over')
-        poisson_means = histogram.sum('dataset').values(overflow='over')[()]
-        values = np.repeat(bin_values, np.random.poisson(np.maximum(np.zeros(len(poisson_means)), poisson_means)))
-        if axis == 'pt':
-            histogram.fill(dataset='pseudodata', pt=values)
-        elif axis == 'mass':
-            histogram.fill(dataset='pseudodata', mass=values)
-        elif axis == 'multiplicity':
-            histogram.fill(dataset='pseudodata', multiplicity=values)
-        elif axis == 'eta':
-            histogram.fill(dataset='pseudodata', eta=values)
-        elif axis == 'phi':
-            histogram.fill(dataset='pseudodata', phi=values)
-        elif axis == 'ht':
-            histogram.fill(dataset='pseudodata', ht=values)
-
-        
         import re
         notdata = re.compile('(?!pseudodata)')
 
@@ -252,18 +176,6 @@ for name in histograms:
         # get axes
         hist.plot1d(histogram[notdata],overlay="dataset", ax=ax, stack=True, overflow='over', clear=False, line_opts=None, fill_opts=fill_opts, error_opts=error_opts, order=['diboson','TTX', 'TTW','ttbar', 'DY']) #error_opts??
         hist.plot1d(histogram['tW_scattering'], overlay="dataset", ax=ax, overflow='over',clear=False, line_opts={'linewidth':3})
-
-        # build ratio
-        """hist.plotratio(
-            num=histogram['pseudodata'].sum("dataset"),
-            denom=histogram[notdata].sum("dataset"),
-            ax=rax,
-            error_opts=data_err_opts,
-            denom_fill_opts={},
-            guide_opts={},
-            unc='num',
-            overflow='over'
-        )"""
 
 
         for l in ['linear', 'log']:
@@ -280,5 +192,3 @@ for name in histograms:
             saveFig(fig, ax, None, plotDir, name+'_shape', scale=l, shape=True)
         fig.clear()
         ax.clear()
-
-df = getCutFlowTable(output, processes=['tW_scattering', 'ttbar', 'diboson', 'TTW', 'TTX', 'DY'], lines=['skim','dilep','fourJet','twoBTag', 'ss', 'met35'])

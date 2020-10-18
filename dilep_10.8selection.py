@@ -271,19 +271,19 @@ def main():
     if not overwrite:
         cache.load()
 
-    if cfg == cache.get('cfg') and histograms == cache.get('histograms') and fileset == cache.get('fileset_small') and cache.get('simple_output'):
+    if cfg == cache.get('cfg') and histograms == cache.get('histograms') and fileset == cache.get('fileset_2l') and cache.get('simple_output'):
         output = cache.get('simple_output')
 
     else:
         # Run the processor
-        output = processor.run_uproot_job(fileset_small,
+        output = processor.run_uproot_job(fileset_2l,
                                       treename='Events',
                                       processor_instance=exampleProcessor(),
                                       executor=processor.futures_executor,
                                       executor_args={'workers': 18, 'function_args': {'flatten': False}},
                                       chunksize=100000,
                                      )
-        cache['fileset']        = fileset_small
+        cache['fileset']        = fileset_2l
         cache['cfg']            = cfg
         cache['histograms']     = histograms
         cache['simple_output']  = output
